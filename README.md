@@ -43,20 +43,22 @@ New agents can be added at any time with the `add-agent` skill.
 ## Install
 
 ```bash
-# 1. Clone
 git clone git@github.com:esafwan/swarm-plus-plus.git ~/.ai-skills/swarm
-
-# 2. Symlink into whichever agents you use
-ln -sfn ~/.ai-skills/swarm/skills ~/.claude/skills/swarm
-ln -sfn ~/.ai-skills/swarm/skills ~/.cursor/skills/swarm
-ln -sfn ~/.ai-skills/swarm/skills ~/.kimi-code/skills/swarm
-ln -sfn ~/.ai-skills/swarm/skills ~/.opencode/skills/swarm
-ln -sfn ~/.ai-skills/swarm/skills ~/.codex/skills/swarm
-ln -sfn ~/.ai-skills/swarm/skills ~/.gemini/config/skills/swarm
+bash ~/.ai-skills/swarm/install.sh
 ```
 
-Each agent discovers `swarm-plus-plus` and `add-agent` as skills. Editing the
-source propagates to every agent through the symlinks.
+`install.sh` auto-detects which agent CLIs are installed on your machine and
+creates the symlinks automatically. Every discovered agent gains access to
+`swarm-plus-plus` and `add-agent` as skills.
+
+Preview what it will do without making changes:
+
+```bash
+bash ~/.ai-skills/swarm/install.sh --dry-run
+```
+
+Editing `~/.ai-skills/swarm/skills/` propagates to every linked agent instantly
+— no re-install needed.
 
 ---
 
