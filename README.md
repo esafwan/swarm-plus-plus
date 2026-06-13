@@ -20,6 +20,14 @@ limits.
 | :--- | :--- |
 | [`swarm-plus-plus`](skills/swarm-plus-plus/SKILL.md) | Master orchestration policy — routing ladder, failure loop, fan-out patterns |
 | [`add-agent`](skills/add-agent/SKILL.md) | Onboard any new agent CLI into the swarm++ fleet via `--help` discovery |
+| [`claude-overview`](skills/claude-overview/SKILL.md) | Claude Code CLI — all flags, models, effort levels, MCP, sessions, sub-agents |
+| [`cursor-overview`](skills/cursor-overview/SKILL.md) | Cursor CLI (`cursor-agent`) — flags, models, thinking levels, worktrees, MCP |
+| [`kimi-overview`](skills/kimi-overview/SKILL.md) | Kimi Code CLI — flags, models, thinking levels, sessions, sub-agents |
+| [`opencode-overview`](skills/opencode-overview/SKILL.md) | OpenCode CLI — flags, Ollama/multi-provider models, agents, MCP |
+| [`antigravity-overview`](skills/antigravity-overview/SKILL.md) | Antigravity (`agy`) — flags, Gemini/Claude models, thinking levels, sub-agents |
+
+All overview skills are installed as individual slash commands (e.g. `/claude-overview`,
+`/kimi-overview`) so any agent in the fleet can look up how to invoke any other agent.
 
 ---
 
@@ -48,8 +56,15 @@ bash ~/.ai-skills/swarm/install.sh
 ```
 
 `install.sh` auto-detects which agent CLIs are installed on your machine and
-creates the symlinks automatically. Every discovered agent gains access to
-`swarm-plus-plus` and `add-agent` as skills.
+creates **two levels of symlinks** per agent:
+
+- `~/.claude/skills/swarm/` — the whole pack under one namespace
+- `~/.claude/skills/swarm-plus-plus/` — individual skill at root
+- `~/.claude/skills/claude-overview/` — individual skill at root
+- … one per skill, for every agent found
+
+This guarantees `/skill-name` works in every agent regardless of how deep it
+scans its skills directory.
 
 Preview what it will do without making changes:
 
