@@ -47,6 +47,8 @@ agy --sandbox                    # Run in sandbox mode (terminal restrictions en
 | `--conversation <id>` | | Resume a previous conversation by its unique ID. |
 | `--model <model>` | | Model for the current CLI session (see Model selection below). |
 | `--add-dir <path>` | | Add a directory to the workspace (repeatable). |
+| `--project <id>` | | Project ID for the current CLI session. |
+| `--new-project` | | Create a new project for this session, rooted at the invoking shell's cwd. See "Known gotcha" below — this is the fix for stale-project cwd drift. |
 | `--dangerously-skip-permissions` | | Auto-approve all tool permissions without interactive prompting. |
 | `--sandbox` | | Run in a sandboxed environment with strict terminal command restrictions. |
 | `--log-file <path>` | | Override the default log file path. |
@@ -95,6 +97,49 @@ agy --model "Claude Sonnet 4.6 (Thinking)"
 ```
 
 ---
+
+## Known Gotcha: `agy` can silently edit the wrong directory
+
+`agy` associates a session with a **project**, and that project can persist
+and be reused across separate `agy -p "..."` invocations from a *different*
+shell `cd`/cwd — even though the `Usage of agy` help text gives no
+indication of this. In practice this means:
+
+```bash
+cd /path/A && agy -p "edit foo.py"        # works, edits /path/A/foo.py
+cd /path/B && agy -p "edit foo.py"        # BUG: may silently edit /path/A/foo.py again,
+                                           # not /path/B/foo.py, because the prior
+                                           # project/session was reused.
+```
+
+This was reproduced twice in one live session (2026-07-28/29, `huf` repo,
+`esafwan/swarm-plus-plus` operator log) — a `git worktree` at path B was the
+intended target, but two separate `agy -p` calls both wrote their edits into
+an unrelated checkout at path A instead. `git diff --stat` in the intended
+worktree showed nothing; the edits only turned up after explicitly checking
+`git status` in the *other* path referenced by `agy`'s own `file://` links
+in its final response text.
+
+**Fix / mitigation, in order of reliability:**
+
+1. **Pass `--new-project`** on every one-shot `agy -p` invocation from a
+   script or another agent, unless you deliberately want to resume a prior
+   project. This forces a fresh project rooted at the current cwd instead of
+   reusing whatever project the CLI last remembered.
+2. **Make the prompt self-verifying.** Prefix the prompt with an explicit
+   instruction to run `pwd && git rev-parse --show-toplevel` first and abort
+   if the resolved directory doesn't match the expected absolute path — this
+   catches the drift even if `--new-project` is forgotten or insufficient.
+3. **Always diff before trusting the result.** Don't rely solely on `agy`'s
+   own stdout/diff summary — independently run `git diff --stat` (or
+   `git status`) in the *actual* target directory after every `agy -p` call,
+   before applying/committing anything. If it's empty, check the path(s) in
+   `agy`'s own `file://...` links in its response — that's usually where the
+   edit actually landed.
+4. If a stray edit is found in the wrong checkout, capture it with
+   `git diff -- <file> > /tmp/x.patch`, `git checkout -- <file>` to revert
+   the wrong location, then `git apply /tmp/x.patch` in the correct
+   directory after reviewing it.
 
 ## Sub-agents & Task Delegation
 
